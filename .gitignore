@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Archivos de entrada/salida temporales
+*.xlsx
+*.xls
+*.csv
+debug*.json
+test*.json
+
+# Node modules y wrangler
+node_modules/
+.wrangler/
+wrangler.toml.backup
+
+# Datos locales (no subir JSONs generados ya que se crean automáticamente)
+data/*.json
+!data/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporales de Windows
+~$*
