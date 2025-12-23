@@ -16,10 +16,18 @@ from datetime import datetime
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
-# Configuración de Cloudflare
-API_TOKEN = "Cm8qe2j5U9GW5qncg-z6iGc7LAV58DYlve1Iyd_T"
-ACCOUNT_ID = "b716491d6afe361dba0e016519df6cb3"
+# Configuración de Cloudflare - USAR VARIABLES DE ENTORNO
+API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
+ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
 BUCKET_NAME = "rem-data"
+
+if not API_TOKEN or not ACCOUNT_ID:
+    print("❌ ERROR: Variables de entorno CLOUDFLARE_API_TOKEN y CLOUDFLARE_ACCOUNT_ID requeridas")
+    print("")
+    print("En PowerShell:")
+    print("  $env:CLOUDFLARE_API_TOKEN = 'tu_token_aqui'")
+    print("  $env:CLOUDFLARE_ACCOUNT_ID = 'tu_account_id_aqui'")
+    sys.exit(1)
 
 def get_publication_date():
     """

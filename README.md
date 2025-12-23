@@ -69,6 +69,7 @@ api REM/
 - Probar API desde ordenador personal
 
 4. **API REST** (Cloudflare Worker)
+   - URL: https://bcra-rem-api.<TU_SUBDOMINIO>.workers.dev
    - 7 endpoints públicos
    - CORS habilitado
    - Cache de 1 hora
@@ -96,19 +97,36 @@ api REM/
 
 ## 🚀 API REST
 
-La API está desplegada en: **https://rem-bcra-api.facujallia.workers.dev**
+La API está desplegada en: **https://bcra-rem-api.<TU_SUBDOMINIO>.workers.dev**
+
+> **Nota**: Reemplaza `<TU_SUBDOMINIO>` con tu subdominio de Cloudflare Workers después del deploy.
+
+### ⚡ Rate Limiting
+
+La API incluye protección contra abuso:
+- 🚦 **1 petición por minuto** por dirección IP
+- 📊 **100,000 peticiones mensuales** global
+- 📈 Endpoint `/api/stats` para monitorear uso
+
+Ver [SETUP_RATE_LIMITING.md](SETUP_RATE_LIMITING.md) para configuración.
 
 ### Endpoints Disponibles
 
 ```bash
+# Documentación completa de la API
+GET /
+
 # Índice de tablas disponibles
 GET /api
+
+# Estadísticas de uso
+GET /api/stats
 
 # Tabla específica (versión latest)
 GET /api/{tabla}
 GET /api/tipo_cambio
-GET /api/inflacion
-GET /api/tasa_badlar
+GET /api/ipc_general
+GET /api/tasa_interes
 
 # Consultas históricas
 GET /api/tipo_cambio?periodo=2025-11
@@ -116,25 +134,81 @@ GET /api/tipo_cambio?year=2025&month=11
 
 # Metadata del período
 GET /api/metadata
+
+# Archivo maestro con todas las tablas
+GET /api/bloques
 ```
 
 ### Ejemplo de Uso
 
 ```python
 import requests
+import time
+
+BASE_URL = 'https://bcra-rem-api.<TU_SUBDOMINIO>.workers.dev'
 
 # Obtener tipo de cambio actual
-r = requests.get('https://rem-bcra-api.facujallia.workers.dev/api/tipo_cambio')
+r = requests.get(f'{BASE_URL}/api/tipo_cambio')
 data = r.json()
+print(f"Tipo de cambio: {data}")
+
+# Esperar 60s para respetar rate limit
+time.sleep(60)
 
 # Obtener inflación de noviembre 2025
-r = requests.get('https://rem-bcra-api.facujallia.workers.dev/api/inflacion?periodo=2025-11')
+r = requests.get(f'{BASE_URL}/api/ipc_general?periodo=2025-11')
 historico = r.json()
+print(f"Inflación histórica: {historico}")
+
+# Ver estadísticas de uso
+r = requests.get(f'{BASE_URL}/api/stats')
+stats = r.json()
+print(f"Uso actual: {stats['requests_realizadas']}/{stats['limite_mensual']}")
+```
+
+### Manejo de Errores
+
+```python
+import requests
+
+try:
+    r = requests.get(f'{BASE_URL}/api/tipo_cambio')
+    r.raise_for_status()
+    data = r.json()
+except requests.exceptions.HTTPError as e:
+    if e.response.status_code == 429:
+        # Rate limit excedido
+        retry_after = e.response.headers.get('Retry-After', 60)
+        print(f"Rate limit excedido. Reintentar en {retry_after}s")
+    elif e.response.status_code == 404:
+        # Tabla no encontrada
+        print("Tabla no existe")
+    else:
+        print(f"Error: {e}")
 ```
 
 ## 🔧 Setup desde Casa
 
-### 1. Subir Archivos Iniciales a R2
+### 1. Configurar Variables de Entorno
+
+**⚠️ IMPORTANTE**: Las credenciales NO deben estar en el código.
+
+Copia `.env.example` a `.env` y completa:
+
+```bash
+cp .env.example .env
+```
+
+En PowerShell:
+
+```powershell
+$env:CLOUDFLARE_API_TOKEN = "tu_token_real"
+$env:CLOUDFLARE_ACCOUNT_ID = "tu_account_id_real"
+```
+
+Valores en: https://dash.cloudflare.com/profile/api-tokens
+
+### 2. Subir Archivos Iniciales a R2
 
 Sigue la guía completa en **`GUIA_UPLOAD_MANUAL.md`**:
 
@@ -143,7 +217,11 @@ Sigue la guía completa en **`GUIA_UPLOAD_MANUAL.md`**:
 3. Crear carpetas: `data/latest/` y `data/2025/11/`
 4. Subir los 19 archivos JSON a ambas carpetas
 
-### 2. Configurar GitHub Secrets
+### 3. Configurar Rate Limiting
+
+Sigue **`SETUP_RATE_LIMITING.md`** para crear el KV namespace.
+
+### 4. Configurar GitHub Secrets
 
 En https://github.com/facundoallia/carry-trade-analyzer/settings/secrets/actions:
 

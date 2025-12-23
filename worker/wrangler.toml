@@ -1,12 +1,17 @@
-name = "rem-bcra-api"
+name = "bcra-rem-api"
 main = "worker.js"
 compatibility_date = "2024-12-01"
 
 # Vincular R2 bucket
 [[r2_buckets]]
 binding = "R2_BUCKET"
-bucket_name = "rem-data"  # Tu bucket real
+bucket_name = "rem-data"
 
-# Variables de entorno (opcional)
+# KV Namespace para rate limiting
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "c689870ea7bb446f8b0a8e4bfd8e045e"
+
+# Variables de entorno
 [vars]
 VERSION = "1.0.0"

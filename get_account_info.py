@@ -5,9 +5,18 @@ Obtener Account ID de Cloudflare usando el API Token
 
 import requests
 import json
+import os
+import sys
 
-# Tu API Token de Cloudflare
-API_TOKEN = "Cm8qe2j5U9GW5qncg-z6iGc7LAV58DYlve1Iyd_T"
+# Tu API Token de Cloudflare - USAR VARIABLE DE ENTORNO
+API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
+
+if not API_TOKEN:
+    print("❌ ERROR: Variable de entorno CLOUDFLARE_API_TOKEN requerida")
+    print("")
+    print("En PowerShell:")
+    print("  $env:CLOUDFLARE_API_TOKEN = 'tu_token_aqui'")
+    sys.exit(1)
 
 headers = {
     "Authorization": f"Bearer {API_TOKEN}",
