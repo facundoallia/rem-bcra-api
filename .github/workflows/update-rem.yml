@@ -3,8 +3,8 @@ name: Actualizar REM BCRA
 on:
   schedule:
     # Ejecutar diariamente a las 12:00 UTC (9:00 AM Argentina)
-    # Solo durante los primeros 7 días del mes (cuando publica el BCRA)
-    - cron: '0 12 1-7 * *'
+    # Durante los primeros 15 días del mes (para asegurar capturas)
+    - cron: '0 12 1-15 * *'
   
   workflow_dispatch:  # Permitir ejecución manual
   
