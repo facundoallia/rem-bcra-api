@@ -5,13 +5,14 @@ on:
     # Ejecutar diariamente a las 12:00 UTC (9:00 AM Argentina)
     # Durante los primeros 15 días del mes (para asegurar capturas)
     - cron: '0 12 1-15 * *'
-  
+
   workflow_dispatch:  # Permitir ejecución manual
-  
+
   push:
     branches: [ main ]
     paths:
-      - 'api REM/**'
+      - 'data/**'
+      - '*.py'
       - '.github/workflows/update-rem.yml'
 
 jobs:
@@ -30,16 +31,17 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
     
-    - name: Instalar dependencias
+    - name: Instalar dependencias Python
       run: |
-        pip install pandas openpyxl requests
-        npm install -g wrangler
+        pip install -r requirements.txt
+
+    - name: Instalar Wrangler CLI
+      run: npm install -g wrangler
     
     - name: Descargar REM desde BCRA
       id: download
       run: |
-        cd "api REM"
-        python "download REM"
+        python download_REM.py
         exit_code=$?
         echo "download_status=$exit_code" >> $GITHUB_OUTPUT
         if [ $exit_code -eq 1 ]; then
@@ -55,8 +57,7 @@ jobs:
       if: steps.download.outputs.download_status == '0'
       id: parse
       run: |
-        cd "api REM"
-        python "read REM.py"
+        python read_REM.py
         echo "parse_status=$?" >> $GITHUB_OUTPUT
       continue-on-error: true
     
@@ -64,7 +65,6 @@ jobs:
       if: steps.parse.outputs.parse_status == '0'
       id: validate
       run: |
-        cd "api REM"
         python validate_output.py
         echo "validate_status=$?" >> $GITHUB_OUTPUT
       continue-on-error: true
@@ -76,14 +76,13 @@ jobs:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
-        cd "api REM"
         python deploy_with_wrangler.py
         echo "deploy_status=$?" >> $GITHUB_OUTPUT
     
     - name: Verificar cambios
       id: changes
       run: |
-        cd "api REM/data"
+        cd data
         if git diff --quiet *.json 2>/dev/null; then
           echo "has_changes=false" >> $GITHUB_OUTPUT
           echo "No hay cambios en los datos"
@@ -97,7 +96,7 @@ jobs:
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add "api REM/data/_metadata.json"
+        git add "data/_metadata.json"
         git commit -m "🤖 Actualizar metadata REM - $(date -u +%Y-%m-%d)" || echo "No metadata changes"
         git push || echo "Nothing to push"
     
@@ -137,6 +136,7 @@ jobs:
       with:
         name: rem-data-failed-${{ github.run_number }}
         path: |
-          api REM/data/*.json
-          api REM/data/*.xlsx
+          data/*.json
+          data/*.xlsx
         retention-days: 30
+        if-no-files-found: warn
