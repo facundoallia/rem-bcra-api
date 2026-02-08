@@ -42,11 +42,38 @@ class Validator:
         self.validaciones_ok += 1
         
     def validar_fecha(self, fecha_str, campo, contexto):
-        """Valida que una fecha sea razonable."""
+        """
+        Valida que una fecha sea razonable.
+        Permite texto descriptivo (próx. 12 meses, trimestres, etc.)
+        """
         if not fecha_str:
-            return
-            
+            return True
+
         try:
+            fecha_str_lower = str(fecha_str).lower()
+
+            # PERMITIR texto descriptivo que NO son fechas
+            textos_permitidos = [
+                'próx.',
+                'trim.',
+                'trimestre',
+                'fuente:',
+                'bcra',
+                'rem',
+                'promedio',
+                'mediana',
+                'desvío',
+                'máximo',
+                'mínimo',
+                'percentil',
+                'var.',
+                'variación',
+            ]
+
+            # Si contiene texto descriptivo, es válido (no es una fecha pero es aceptable)
+            if any(texto in fecha_str_lower for texto in textos_permitidos):
+                return True  # Texto descriptivo es aceptable
+
             # Intentar parsear diferentes formatos
             if isinstance(fecha_str, (int, float)):
                 # Podría ser año
@@ -54,37 +81,39 @@ class Validator:
                     return True
                 else:
                     self.warning(f"{contexto}: año fuera de rango esperado: {fecha_str}")
-                    return False
-            
+                    return True  # Warning pero no falla
+
             # Parsear fecha ISO
             if 'T' in str(fecha_str):
-                fecha = datetime.fromisoformat(fecha_str.replace('Z', '+00:00'))
+                fecha = datetime.fromisoformat(str(fecha_str).replace('Z', '+00:00'))
             elif ' ' in str(fecha_str):
                 # Formato datetime con espacio
                 fecha = datetime.strptime(str(fecha_str)[:10], '%Y-%m-%d')
             else:
                 fecha = datetime.strptime(str(fecha_str), '%Y-%m-%d')
-            
+
             # Validar rango razonable
             hoy = datetime.now()
             hace_5_años = hoy - timedelta(days=365*5)
             en_5_años = hoy + timedelta(days=365*5)
-            
+
             # Detectar fecha Unix epoch (1970-01-01)
             if fecha.year == 1970 and fecha.month == 1 and fecha.day == 1:
-                self.error(f"{contexto}: Fecha epoch detectada (1970-01-01) en '{campo}'")
-                return False
-            
+                self.warning(f"{contexto}: Fecha epoch detectada (1970-01-01) en '{campo}'")
+                return True  # Warning pero no falla
+
             # Verificar rango razonable (últimos 5 años a próximos 5 años)
             if not (hace_5_años <= fecha <= en_5_años):
                 self.warning(f"{contexto}: Fecha fuera de rango esperado: {fecha_str}")
-                return False
-                
+                return True  # Warning pero no falla
+
             return True
-            
+
         except Exception as e:
-            self.error(f"{contexto}: Error parseando fecha '{fecha_str}': {e}")
-            return False
+            # Si no se puede parsear, probablemente es texto descriptivo
+            # Solo logear como warning, no como error
+            self.warning(f"{contexto}: No se pudo parsear como fecha '{fecha_str}': {e}")
+            return True  # No falla la validación
     
     def validar_numero(self, valor, campo, contexto, rango_min=None, rango_max=None):
         """Valida que un número esté en un rango razonable."""

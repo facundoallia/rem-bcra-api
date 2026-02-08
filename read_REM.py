@@ -271,17 +271,51 @@ def normalizar_bloque(df, bloque):
     return df_datos
 
 def convertir_fecha(val):
-    """Intenta convertir un valor a fecha en formato ISO."""
+    """
+    Intenta convertir un valor a fecha en formato ISO.
+    Devuelve None para texto descriptivo que NO son fechas.
+    """
     if pd.isna(val):
         return None
-    
+
     try:
         # Si ya es datetime
         if isinstance(val, (pd.Timestamp, datetime)):
             return val.strftime('%Y-%m-%d')
-        
+
         val_str = str(val).strip()
-        
+
+        # FILTRAR texto descriptivo que NO son fechas
+        textos_invalidos = [
+            'próx.',
+            'trim.',
+            'trimestre',
+            'fuente:',
+            'bcra',
+            'rem',
+            'promedio',
+            'mediana',
+            'desvío',
+            'máximo',
+            'mínimo',
+            'percentil',
+            'var.',
+            'variación',
+            'nivel',
+            'general',
+            'total',
+        ]
+
+        val_lower = val_str.lower()
+        if any(texto in val_lower for texto in textos_invalidos):
+            return None  # No es una fecha, es texto descriptivo
+
+        # Si contiene muchas letras y pocas números, probablemente NO es fecha
+        letras = sum(1 for c in val_str if c.isalpha())
+        numeros = sum(1 for c in val_str if c.isdigit())
+        if letras > 3 and numeros < 2:
+            return None  # Probablemente es texto, no fecha
+
         # Intentar parsear diferentes formatos
         formatos = [
             '%Y-%m-%d',
@@ -290,23 +324,27 @@ def convertir_fecha(val):
             '%Y/%m',
             '%Y',
         ]
-        
+
         for fmt in formatos:
             try:
                 fecha = datetime.strptime(val_str, fmt)
-                return fecha.strftime('%Y-%m-%d')
+                # Validar que sea una fecha razonable (1900-2100)
+                if 1900 <= fecha.year <= 2100:
+                    return fecha.strftime('%Y-%m-%d')
             except:
                 continue
-        
+
         # Intentar con pandas
         fecha = pd.to_datetime(val, errors='coerce')
         if pd.notna(fecha):
-            return fecha.strftime('%Y-%m-%d')
-        
-        # Si no se puede convertir, devolver el string original
-        return val_str
+            # Validar que sea una fecha razonable
+            if 1900 <= fecha.year <= 2100:
+                return fecha.strftime('%Y-%m-%d')
+
+        # Si no se puede convertir a fecha válida, devolver None
+        return None
     except:
-        return str(val) if pd.notna(val) else None
+        return None
 
 def convertir_numero(val):
     """Intenta convertir un valor a número."""

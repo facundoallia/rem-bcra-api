@@ -4,11 +4,13 @@ deploy_with_wrangler.py
 -----------------------
 Sube archivos JSON a Cloudflare R2 usando Wrangler CLI
 Estructura: data/YYYY/MM/rem_*.json
+Multiplataforma: Windows y Linux
 """
 
 import os
 import subprocess
 import sys
+import platform
 from pathlib import Path
 import json
 from datetime import datetime
@@ -65,40 +67,56 @@ def get_publication_date():
     return str(now.year), f"{now.month:02d}"
 
 def setup_env():
-    """Configura variables de entorno para wrangler."""
+    """Configura variables de entorno para wrangler (multiplataforma)."""
     os.environ["CLOUDFLARE_API_TOKEN"] = API_TOKEN
     os.environ["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
-    # Agregar npm global a PATH
-    npm_path = os.path.join(os.environ["APPDATA"], "npm")
-    if npm_path not in os.environ["PATH"]:
-        os.environ["PATH"] = f"{npm_path};{os.environ['PATH']}"
+
+    # Agregar npm global a PATH (multiplataforma)
+    if platform.system() == "Windows":
+        # Windows: usar APPDATA
+        npm_path = os.path.join(os.environ.get("APPDATA", ""), "npm")
+        path_separator = ";"
+    else:
+        # Linux/Mac: paths comunes de npm
+        npm_path = "/usr/local/bin"
+        path_separator = ":"
+
+    if npm_path and npm_path not in os.environ["PATH"]:
+        os.environ["PATH"] = f"{npm_path}{path_separator}{os.environ['PATH']}"
 
 def upload_file_with_wrangler(local_path, object_key):
-    """Sube un archivo usando wrangler CLI."""
+    """Sube un archivo usando wrangler CLI (multiplataforma)."""
     try:
-        # Usar wrangler.cmd en Windows
-        wrangler_cmd = os.path.join(os.environ["APPDATA"], "npm", "wrangler.cmd")
-        
+        # Comando de wrangler según el sistema operativo
+        if platform.system() == "Windows":
+            # Windows: usar wrangler.cmd
+            wrangler_cmd = "wrangler.cmd"
+        else:
+            # Linux/Mac: usar wrangler directamente
+            wrangler_cmd = "wrangler"
+
         cmd = [
             wrangler_cmd, "r2", "object", "put",
             f"{BUCKET_NAME}/{object_key}",
             f"--file={local_path}",
             "--remote"  # IMPORTANTE: subir al bucket remoto, no local
         ]
-        
+
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             check=True
         )
-        
+
         return True
     except subprocess.CalledProcessError as e:
         print(f"      Error: {e.stderr[:100]}")
         return False
     except FileNotFoundError:
         print(f"      Error: wrangler no encontrado en PATH")
+        print(f"      Sistema: {platform.system()}")
+        print(f"      PATH: {os.environ.get('PATH', '')[:200]}")
         return False
 
 def deploy():
