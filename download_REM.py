@@ -97,27 +97,44 @@ def find_latest_rem_url():
     """
     Busca la URL más reciente del REM.
     Prueba primero la nueva estructura (2026+), luego fallback a la antigua.
+
+    IMPORTANTE: El REM se publica con 1 mes de retraso.
+    Por ejemplo, en febrero 2026 el REM más reciente es enero 2026.
     """
     today = datetime.today()
     year = today.year
     month = today.month
 
-    # Candidatos: mes actual, mes anterior, 2 meses atrás
+    # Candidatos: empezar desde mes ANTERIOR (el REM se publica con 1 mes de retraso)
     candidatos = [
-        (year, month),      # Mes actual
-        (year, month - 1),  # Mes anterior
+        (year, month - 1),  # Mes anterior (lo más reciente que puede existir)
         (year, month - 2),  # 2 meses atrás
+        (year, month - 3),  # 3 meses atrás (por seguridad)
     ]
 
-    # Ajustar para enero/febrero
+    # Ajustar para enero/febrero/marzo
     if month == 1:
-        candidatos.append((year - 1, 12))
-        candidatos.append((year - 1, 11))
+        candidatos = [
+            (year - 1, 12),  # Diciembre año anterior
+            (year - 1, 11),  # Noviembre año anterior
+            (year - 1, 10),  # Octubre año anterior
+        ]
     elif month == 2:
-        candidatos.append((year - 1, 12))
+        candidatos = [
+            (year, 1),       # Enero año actual
+            (year - 1, 12),  # Diciembre año anterior
+            (year - 1, 11),  # Noviembre año anterior
+        ]
+    elif month == 3:
+        candidatos = [
+            (year, 2),       # Febrero año actual
+            (year, 1),       # Enero año actual
+            (year - 1, 12),  # Diciembre año anterior
+        ]
 
-    print(f"📅 Fecha actual: {today.strftime('%Y-%m-%d')}")
-    print(f"🔍 Buscando REM más reciente...\n")
+    print(f"📅 Fecha actual: {today.strftime('%Y-%m-%d')} ({MESES[month].capitalize()} {year})")
+    print(f"ℹ️  El REM se publica con 1 mes de retraso")
+    print(f"🔍 Buscando REM más reciente (desde {MESES[candidatos[0][1]].capitalize()} {candidatos[0][0]})...\n")
 
     urls_probadas = []
 
