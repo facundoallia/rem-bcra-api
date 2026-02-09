@@ -73,7 +73,12 @@ jobs:
       if: steps.parse.outputs.parse_status == '0'
       id: deploy
       env:
+        # Opción 1: API Token (recomendado)
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        # Opción 2: Global API Key (alternativa)
+        CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+        CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+        # Account ID (requerido siempre)
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         python deploy_with_wrangler.py
