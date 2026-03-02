@@ -51,5 +51,8 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Credenciales (NO SUBIR)
+SETUP_CREDENTIALS.md
+
 # Temporales de Windows
 ~$*
