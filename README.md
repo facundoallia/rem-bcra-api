@@ -272,6 +272,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-Built by [Facundo Jallia](https://github.com/facundoallia) · Data sourced from [BCRA](https://www.bcra.gob.ar/)
+Built by [Facundo Allia](https://github.com/facundoallia) · Data sourced from [BCRA](https://www.bcra.gob.ar/)
 
 </div>
